@@ -1,6 +1,7 @@
 package kafker
 
 import (
+	"context"
 	"errors"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -63,4 +64,41 @@ func (kp *KafkaProducer) Produce(message string) (*kafka.Message, error) {
 	}
 
 	return nil, errors.New("nothing happened")
+}
+
+func (kp *KafkaProducer) ProduceWithContext(ctx context.Context, message string) (*kafka.Message, error) {
+	deliveryChan := make(chan kafka.Event)
+	defer close(deliveryChan)
+
+	err := kp.Producer.Produce(
+		&kafka.Message{
+			TopicPartition: kafka.TopicPartition{
+				Topic:     &kp.Topic,
+				Partition: kafka.PartitionAny,
+			},
+			Value: []byte(message),
+		}, deliveryChan,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, errors.New("context terminated")
+		case e := <-deliveryChan:
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					return nil, ev.TopicPartition.Error
+				} else {
+					return ev, nil
+				}
+			}
+		default:
+			continue
+		}
+	}
 }
