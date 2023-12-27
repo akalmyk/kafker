@@ -33,7 +33,7 @@ func (kp *KafkaProducer) Close() {
 	kp.Producer.Close()
 }
 
-func (kp *KafkaProducer) Produce(message string) error {
+func (kp *KafkaProducer) Produce(message string) (*kafka.Message, error) {
 	deliveryChan := make(chan kafka.Event)
 	defer close(deliveryChan)
 
@@ -48,19 +48,19 @@ func (kp *KafkaProducer) Produce(message string) error {
 	)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for e := range deliveryChan {
 		switch ev := e.(type) {
 		case *kafka.Message:
 			if ev.TopicPartition.Error != nil {
-				return ev.TopicPartition.Error
+				return nil, ev.TopicPartition.Error
 			} else {
-				return nil
+				return ev, nil
 			}
 		}
 	}
 
-	return errors.New("nothing happened")
+	return nil, errors.New("nothing happened")
 }
