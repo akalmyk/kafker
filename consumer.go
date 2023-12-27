@@ -72,6 +72,8 @@ func (kc *KafkaConsumer) ConsumeWithContext(ctx context.Context, msgChan chan []
 		select {
 		case <-ctx.Done():
 			return errors.New("context terminated")
+		default:
+			continue
 		}
 	}
 }
