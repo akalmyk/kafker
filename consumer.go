@@ -40,7 +40,6 @@ func NewKafkaConsumer(bs, gid, topic string) (*KafkaConsumer, error) {
 
 func (kc *KafkaConsumer) Consume(msgChan chan []byte) {
 	for {
-		//fmt.Println("consume kafka")
 		ev := kc.Consumer.Poll(100)
 		if ev == nil {
 			continue

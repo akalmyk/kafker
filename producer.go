@@ -33,9 +33,6 @@ func (kp *KafkaProducer) Close() {
 	kp.Producer.Close()
 }
 
-// Put a message in Kafka
-//
-//	returns error if broken
 func (kp *KafkaProducer) Produce(message string) error {
 	deliveryChan := make(chan kafka.Event)
 	defer close(deliveryChan)
