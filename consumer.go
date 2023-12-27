@@ -1,6 +1,8 @@
 package kafker
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -49,6 +51,27 @@ func (kc *KafkaConsumer) Consume(msgChan chan []byte) {
 			msgChan <- e.Value
 		case kafka.Error:
 			fmt.Fprintf(os.Stderr, "Error: %v\n", e)
+		}
+	}
+}
+
+func (kc *KafkaConsumer) ConsumeWithContext(ctx context.Context, msgChan chan []byte) error {
+	for {
+		ev := kc.Consumer.Poll(100)
+		if ev == nil {
+			continue
+		}
+
+		switch e := ev.(type) {
+		case *kafka.Message:
+			msgChan <- e.Value
+		case kafka.Error:
+			return e
+		}
+
+		select {
+		case <-ctx.Done():
+			return errors.New("context terminated")
 		}
 	}
 }
